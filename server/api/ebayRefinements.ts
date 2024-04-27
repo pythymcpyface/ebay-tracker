@@ -4,6 +4,11 @@ import axios from 'axios';
 import getToken from './ebayAuth';
 
 const ebayRefinements = (params, token) => {
+  Object.keys(params).forEach((key) => {
+    if (!params[key]) {
+      delete params[key];
+    }
+  });
   const {
     item,
     category,
