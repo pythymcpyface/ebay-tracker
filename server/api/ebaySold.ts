@@ -1,7 +1,13 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
+import utils from '../../utils';
 
 const getEbaySoldResults = (params) => {
+  Object.keys(params).forEach((key) => {
+    if (!params[key]) {
+      delete params[key];
+    }
+  });
   const {
     item,
     category,
@@ -17,9 +23,11 @@ const getEbaySoldResults = (params) => {
     _ipg: 60,
     _sop: 10,
     LH_ItemCondition: condition,
+    ...params,
   };
-
-  return axios.get(soldUrl, { params: ebayParams })
+  const ebayParamsEncoded = utils.encodeObject(ebayParams);
+  const uri = axios.getUri({ url: soldUrl, params: ebayParamsEncoded });
+  return axios.get(uri)
     .then((response) => {
       return response;
     }).catch((error) => {
