@@ -8,6 +8,9 @@ export default defineNuxtConfig({
     tokenUrl: process.env.EBAY_TOKEN_URL,
     sessionSecret: process.env.SESSION_SECRET,
   },
+  buildModules: [
+    '@nuxtjs/date-fns',
+  ],
   modules: [
     '@nuxt/content',
     'nuxt-highcharts',

@@ -65,6 +65,9 @@ export default {
           className: 'my-chart',
           type: this.chartType.toLowerCase(),
         },
+        credits: {
+          enabled: false,
+        },
         legend: {
           enabled: false,
         },
@@ -124,7 +127,9 @@ export default {
     updateLiveChart(values) {
       const data = Array.from(values).map((datapoint) => {
         return [parseFloat(datapoint[0]), parseFloat(datapoint[1])];
-      }).filter((datapoint) => !!datapoint[0] && !!datapoint[1]);
+      }).filter((datapoint) => {
+        return !!datapoint[0] && !!datapoint[1];
+      });
       this.points = data;
     },
   },
