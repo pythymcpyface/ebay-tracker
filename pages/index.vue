@@ -62,10 +62,16 @@
     <SoldChart ref="soldChart" />
     <LiveChart ref="liveChart" />
   </div>
+  <ItemSummary
+    v-for="itemSummary in itemSummaries"
+    :key="itemSummary.itemId"
+    :item="itemSummary"
+  />
 </template>
 
 <script setup>
 import constants from '../constants';
+import utils from '../utils';
 
 const item = ref('');
 const soldChart = ref(null);
@@ -79,6 +85,7 @@ const selectedCategory = ref(null);
 const selectedAspect = ref({});
 const selectedBuyingOption = ref(null);
 const selectedCondition = ref(null);
+const itemSummaries = ref(null);
 
 const search = () => {
   if (item.value) {
@@ -130,18 +137,15 @@ const search = () => {
           item: item.value,
           category: selectedCategory.value,
           buyingOption: selectedBuyingOption.value,
-          condition: constants.conditionsObj[selectedCondition.value],
+          condition: selectedCondition.value,
           ...selectedAspect.value,
         },
       },
     ).then((data) => {
-      const nowMilliseconds = new Date().getTime();
+      itemSummaries.value = data.data.itemSummaries;
       const values = data.data.itemSummaries.map((itemSummary) => {
         const price = itemSummary?.price?.value;
-        const endDate = itemSummary?.itemEndDate;
-        const parsedEndDate = Date.parse(endDate);
-        const endDateMilliseconds = endDate ? parsedEndDate : -1;
-        const minutesRemaining = (endDateMilliseconds - nowMilliseconds) / (60 * 1000);
+        const minutesRemaining = utils.calculateMinutesRemaining(itemSummary.itemEndDate);
         return [minutesRemaining, price];
       });
       liveChart.value.updateLiveChart(values);
@@ -183,7 +187,6 @@ watch(selectedCategory, async () => {
 });
 
 watch(selectedAspect, async () => {
-  console.log(selectedAspect.value);
   if (Object.keys(selectedAspect.value).length) {
     search();
   }

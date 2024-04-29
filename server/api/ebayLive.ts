@@ -16,15 +16,14 @@ const ebayLiveResults = (params, token) => {
   const {
     item,
     category,
-    // buyingOption,
-    // condition,
+    condition,
   } = params;
 
   const aspects = { ...params };
   delete aspects.item;
   delete aspects.category;
-  // delete aspects.buyingOption;
-  // delete aspects.condition;
+  delete aspects.buyingOption;
+  delete aspects.condition;
 
   const aspectsEncoded = utils.encodeObject(aspects);
   const newAspectsEncoded = { ...aspectsEncoded };
@@ -38,7 +37,7 @@ const ebayLiveResults = (params, token) => {
   const liveUrl = 'https://api.ebay.com/buy/browse/v1/item_summary/search';
 
   const otherParams = {
-    // filter: `buyingOptions:{${buyingOption}}`,
+    filter: 'buyingOptions:{AUCTION}',
     sort: 'endingSoonest',
     q: item,
     category_ids: category,
@@ -48,7 +47,7 @@ const ebayLiveResults = (params, token) => {
 
   const paramsEncoded = {
     ...otherParamsEncoded,
-    aspect_filter: `categoryId:${category},${newAspectsString}`,
+    aspect_filter: `categoryId:${category},conditionDistributions:{${condition}},${newAspectsString}`,
   };
 
   const uri = axios.getUri({ url: liveUrl, params: paramsEncoded });
@@ -69,8 +68,8 @@ export default defineEventHandler(async (event) => {
     const tokenData = await getToken(config);
     event.context.session.data = { tokenData };
     const token = tokenData.access_token;
-    const refinements = await ebayLiveResults(query, token);
-    return { data: refinements.data };
+    const results = await ebayLiveResults(query, token);
+    return { data: results.data };
   }
   if (event?.context?.session?.data?.access_token) {
     const now = Math.floor(Date.now() / 1000);

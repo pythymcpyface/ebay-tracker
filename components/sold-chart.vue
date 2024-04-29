@@ -3,6 +3,7 @@
     class="flex-1 justify-between p-1"
     :options="chartOptions"
     :update="watchers"
+    :modules="['exporting']"
   />
 </template>
 
@@ -12,7 +13,9 @@ import highchartsHistogramBellcurve from 'highcharts/modules/histogram-bellcurve
 
 const labels = ['4σ', '3σ', '2σ', 'σ', 'μ', 'σ', '2σ', '3σ', '4σ'];
 const pointsInInterval = 5;
+const intervals = 4;
 const points = ref([]);
+let updated = false;
 
 if (typeof Highcharts === 'object') {
   highchartsHistogramBellcurve(Highcharts);
@@ -26,6 +29,7 @@ export default {
       titles: ['Sold price distribution', ''],
       points: points.value,
       pointsInInterval,
+      intervals,
       seriesColor: '',
       animationDuration: 1000,
       chartType: '',
@@ -63,24 +67,42 @@ export default {
         chart: {
           events: {
             redraw() {
+              // if (!updated && this?.series[1]?.data?.length) {
+              //   this?.series[1]?.data?.forEach((point) => {
+              //     point.update({
+              //       x: point.y,
+              //       y: point.x,
+              //     }, false, false, true);
+              //   });
+              //   updated = true;
+              // }
+              const ys = this?.series[1]?.data.map((point) => point?.y);
+              const max = Math.max(...ys);
+              const nPoints = this?.series[0]?.data?.length;
+              const midIndex = Math.floor(nPoints / 2);
+              const midPoint = this?.series[0]?.data?.at(midIndex);
+              const midPointY = midPoint?.y;
+              const midPointRatio = max / midPointY;
+
               this?.series[0]?.data?.forEach((point, i) => {
-                if (i % pointsInInterval === 0) {
-                  const label = labels[Math.floor(i / pointsInInterval)];
-                  point.update({
-                    color: 'black',
-                    dataLabels: {
-                      enabled: true,
-                      // eslint-disable-next-line max-len
-                      format: label,
-                      overflow: 'none',
-                      crop: false,
-                      y: -2,
-                      style: {
-                        fontSize: '13px',
-                      },
+                const currentY = point.y;
+                const newY = currentY * midPointRatio;
+                const label = labels[Math.floor(i / pointsInInterval)];
+                point.update({
+                  color: i % pointsInInterval === 0 ? 'black' : point.color,
+                  y: newY,
+                  dataLabels: i % pointsInInterval === 0 ? {
+                    enabled: true,
+                    // eslint-disable-next-line max-len
+                    format: label,
+                    overflow: 'none',
+                    crop: false,
+                    y: -2,
+                    style: {
+                      fontSize: '13px',
                     },
-                  }, false, false, true);
-                }
+                  } : point.dataLabels,
+                }, false, false, true);
               });
               this.render();
             },
@@ -108,7 +130,7 @@ export default {
           yAxis: 1,
           baseSeries: 1,
           pointsInInterval: this.pointsInInterval,
-          intervals: 4,
+          intervals: this.intervals,
           zIndex: -1,
           name: this.seriesNames[0],
           color: this.seriesColor,
@@ -118,11 +140,15 @@ export default {
         }, {
           type: 'scatter',
           name: this.seriesNames[1],
-          data: Array.from(this.points),
-          visible: false,
+          data: Array.from(this.points).map((point, i) => {
+            return [point, i];
+          }),
+          visible: true,
           marker: {
             radius: 1.5,
           },
+          xAxis: 1,
+          yAxis: 1,
         }],
       };
     },
@@ -131,6 +157,7 @@ export default {
   },
   methods: {
     updateSoldChart(datapoints) {
+      updated = false;
       const data = Array.from(datapoints).map((datapoint) => {
         return parseFloat(datapoint.replace(/[^0-9\\.]/g, ''));
       });
