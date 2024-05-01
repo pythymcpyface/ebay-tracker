@@ -9,11 +9,14 @@
 </template>
 
 <script>
+const currency = ref('');
+
 export default {
   data() {
     return {
       title: 'Live listings chart',
       points: [],
+      currency: '',
       seriesColor: '',
       animationDuration: 1000,
       chartType: '',
@@ -52,6 +55,12 @@ export default {
       return {
         accessibility: { enabled: false },
         chart: {
+          events: {
+            redraw() {
+              this?.series[0].yAxis.setTitle({ text: `Price (${currency.value})` }, false);
+              this.render();
+            },
+          },
           backgroundColor: this.sexy
             ? {
               linearGradient: { x1: 0, x2: 0, y1: 0, y2: 1 },
@@ -85,7 +94,7 @@ export default {
         },
         yAxis: [{
           title: {
-            text: this.yAxis,
+            text: `${this.yAxis} (${this.currency})`,
             style: {
               color: '#000000',
             },
@@ -124,13 +133,14 @@ export default {
     },
   },
   methods: {
-    updateLiveChart(values) {
+    updateLiveChart(values, symbol) {
       const data = Array.from(values).map((datapoint) => {
         return [parseFloat(datapoint[0]), parseFloat(datapoint[1])];
       }).filter((datapoint) => {
         return !!datapoint[0] && !!datapoint[1];
       });
       this.points = data;
+      currency.value = symbol;
     },
   },
 };

@@ -15,7 +15,7 @@ const labels = ['4σ', '3σ', '2σ', 'σ', 'μ', 'σ', '2σ', '3σ', '4σ'];
 const pointsInInterval = 5;
 const intervals = 4;
 const points = ref([]);
-let updated = false;
+const currency = ref('');
 
 if (typeof Highcharts === 'object') {
   highchartsHistogramBellcurve(Highcharts);
@@ -28,6 +28,7 @@ export default {
       backgroundColor: '#fff',
       titles: ['Sold price distribution', ''],
       points: points.value,
+      currency: currency.value,
       pointsInInterval,
       intervals,
       seriesColor: '',
@@ -57,7 +58,7 @@ export default {
       const ctx = this;
       return {
         xAxis: [{ visible: false }, {
-          title: { text: this.xAxisTitles[0] },
+          title: { text: `${this.xAxisTitles[0]} (${currency.value})` },
           tickAmount: 20,
         }],
         yAxis: [{ visible: false }, { visible: false }],
@@ -67,23 +68,14 @@ export default {
         chart: {
           events: {
             redraw() {
-              // if (!updated && this?.series[1]?.data?.length) {
-              //   this?.series[1]?.data?.forEach((point) => {
-              //     point.update({
-              //       x: point.y,
-              //       y: point.x,
-              //     }, false, false, true);
-              //   });
-              //   updated = true;
-              // }
-              const ys = this?.series[1]?.data.map((point) => point?.y);
+              this?.series[2].xAxis.setTitle({ text: `Price (${currency.value})` }, false);
+              const ys = this?.series[2]?.data.map((point) => point?.y);
               const max = Math.max(...ys);
               const nPoints = this?.series[0]?.data?.length;
               const midIndex = Math.floor(nPoints / 2);
               const midPoint = this?.series[0]?.data?.at(midIndex);
               const midPointY = midPoint?.y;
               const midPointRatio = max / midPointY;
-
               this?.series[0]?.data?.forEach((point, i) => {
                 const currentY = point.y;
                 const newY = currentY * midPointRatio;
@@ -132,7 +124,7 @@ export default {
           pointsInInterval: this.pointsInInterval,
           intervals: this.intervals,
           zIndex: -1,
-          name: this.seriesNames[0],
+          name: `${this.seriesNames[0]} (${currency.value})`,
           color: this.seriesColor,
           marker: {
             enabled: true,
@@ -140,6 +132,16 @@ export default {
         }, {
           type: 'scatter',
           name: this.seriesNames[1],
+          data: Array.from(this.points),
+          visible: false,
+          marker: {
+            radius: 1.5,
+          },
+          xAxis: 1,
+          yAxis: 1,
+        }, {
+          type: 'scatter',
+          name: '',
           data: Array.from(this.points).map((point, i) => {
             return [point, i];
           }),
@@ -156,11 +158,11 @@ export default {
   mounted() {
   },
   methods: {
-    updateSoldChart(datapoints) {
-      updated = false;
+    updateSoldChart(datapoints, symbol) {
       const data = Array.from(datapoints).map((datapoint) => {
         return parseFloat(datapoint.replace(/[^0-9\\.]/g, ''));
       });
+      currency.value = symbol;
       this.points = data.filter((number) => !!number);
     },
   },

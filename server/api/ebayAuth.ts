@@ -1,5 +1,6 @@
 /* eslint-disable camelcase */
 import axios from 'axios';
+import { defineEventHandler, useSession } from 'h3';
 
 const getToken = (config) => {
   const { clientId, clientSecret } = config;
@@ -24,4 +25,17 @@ const getToken = (config) => {
     });
 };
 
-export default getToken;
+export default defineEventHandler(async (event) => {
+  const config = useRuntimeConfig(event);
+  const session = await useSession(event, { password: config.sessionSecret });
+  const now = Math.floor(Date.now() / 1000);
+  let { access_token, expires_in, mint_time } = session?.data.tokenData || {};
+  if (!access_token || ((now - mint_time) > (expires_in - 30))) {
+    const tokenData = await getToken(config);
+    access_token = tokenData.access_token;
+    await session.update({ tokenData });
+  }
+  return { token: {
+    access_token,
+  } };
+});

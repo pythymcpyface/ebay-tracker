@@ -15,14 +15,7 @@ export default defineNuxtConfig({
     '@nuxt/content',
     'nuxt-highcharts',
     '@nuxt/ui',
-    'h3-session/nuxt',
   ],
-  session: {
-    secret: process.env.SESSION_SECRET,
-    resave: true,
-    saveUninitialized: true,
-    cookie: { secure: true, maxAge: 900000 },
-  },
   colorMode: {
     classSuffix: '',
   },

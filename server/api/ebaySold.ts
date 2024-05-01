@@ -13,7 +13,8 @@ const getEbaySoldResults = (params) => {
     category,
     condition,
   } = params;
-  const soldUrl = 'https://www.ebay.co.uk/sch/i.html';
+  const marketplace = params?.marketplace || 'com';
+  const soldUrl = `https://www.ebay.${marketplace}/sch/i.html`;
 
   const uris = Array(5).fill(0).map((_, i) => {
     const ebayParams = {
@@ -32,7 +33,13 @@ const getEbaySoldResults = (params) => {
     return axios.getUri({ url: soldUrl, params: ebayParamsEncoded });
   });
 
-  return axios.all(uris.map((uri) => axios.get(uri))).then((data) => {
+  return axios.all(uris.map((uri) => axios.get(uri, {
+    paramsSerializer(params) {
+      let result = '';
+      // Build the query string
+      return result;
+    },
+  }))).then((data) => {
     return data;
   }).catch((error) => {
     return error;
@@ -42,10 +49,18 @@ const getEbaySoldResults = (params) => {
 export default defineEventHandler(async (event) => {
   const query = getQuery(event);
   const responses = await getEbaySoldResults(query);
-  const priceElements = responses.map((response) => {
-    const $ = cheerio.load(response.data);
-    return Array.from($('.s-item__price').find('.POSITIVE'))
-      .map((price) => price.children?.at(0)?.data);
-  }).flat();
-  return { data: priceElements };
+  const priceElements = responses[0].data;
+  let _priceElements = [];
+  if (responses instanceof Array) {
+    _priceElements = responses?.map((response) => {
+      if (response.status === 200) {
+        const $ = cheerio.load(response.data);
+        return Array.from($('.s-item__price').find('.POSITIVE'))
+          .map((price) => {
+            return price.children?.at(0)?.data;
+          });
+      }
+    }).flat();
+  }
+  return { data: _priceElements };
 });
