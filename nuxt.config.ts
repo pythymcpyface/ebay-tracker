@@ -3,16 +3,12 @@ import { defineNuxtConfig } from 'nuxt/config';
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   runtimeConfig: {
-    clientId: process.env.EBAY_CLIENT_ID,
-    clientSecret: process.env.EBAY_CLIENT_SECRET,
-    tokenUrl: process.env.EBAY_TOKEN_URL,
-    sessionSecret: process.env.SESSION_SECRET,
-  },
-  env: {
-    clientId: process.env.EBAY_CLIENT_ID,
-    clientSecret: process.env.EBAY_CLIENT_SECRET,
-    tokenUrl: process.env.EBAY_TOKEN_URL,
-    sessionSecret: process.env.SESSION_SECRET,
+    clientSecret: process.env.NUXT_EBAY_CLIENT_SECRET,
+    sessionSecret: process.env.NUXT_SESSION_SECRET,
+    public: {
+      clientId: process.env.NUXT_EBAY_CLIENT_ID || 'AndrewGi-applicat-PRD-c7f9b21e9-c28956e3',
+      tokenUrl: process.env.NUXT_EBAY_TOKEN_URL || 'https://api.ebay.com/identity/v1/oauth2/token',
+    },
   },
   buildModules: [
     '@nuxtjs/date-fns',

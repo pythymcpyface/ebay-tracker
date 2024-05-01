@@ -49,10 +49,9 @@ const getEbaySoldResults = (params) => {
 export default defineEventHandler(async (event) => {
   const query = getQuery(event);
   const responses = await getEbaySoldResults(query);
-  const priceElements = responses[0].data;
-  let _priceElements = [];
+  let priceElements = [];
   if (responses instanceof Array) {
-    _priceElements = responses?.map((response) => {
+    priceElements = responses?.map((response) => {
       if (response.status === 200) {
         const $ = cheerio.load(response.data);
         return Array.from($('.s-item__price').find('.POSITIVE'))
@@ -62,5 +61,5 @@ export default defineEventHandler(async (event) => {
       }
     }).flat();
   }
-  return { data: _priceElements };
+  return { data: priceElements };
 });
