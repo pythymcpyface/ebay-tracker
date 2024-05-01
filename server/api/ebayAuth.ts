@@ -3,7 +3,10 @@ import axios from 'axios';
 import { defineEventHandler, useSession } from 'h3';
 
 const getToken = (config) => {
-  const { clientId, clientSecret } = config;
+  const { clientId, clientSecret, tokenUrl } = config
+    || { clientId: process.env.EBAY_CLIENT_ID,
+      clientSecret: process.env.EBAY_CLIENT_SECRET,
+      tokenUrl: process.env.EBAY_TOKEN_URL };
   const credsString = `${clientId}:${clientSecret}`;
   const encodedCreds = btoa(credsString);
 
@@ -16,7 +19,7 @@ const getToken = (config) => {
     Authorization: `Basic ${encodedCreds}`,
   };
 
-  return axios.post(config.tokenUrl, body, { headers })
+  return axios.post(tokenUrl, body, { headers })
     .then((response) => {
       const mint_time = Math.floor(Date.now() / 1000);
       return { ...response.data, mint_time };
@@ -27,7 +30,8 @@ const getToken = (config) => {
 
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig(event);
-  const session = await useSession(event, { password: config.sessionSecret });
+  const { sessionSecret } = config || { sessionSecret: process.env.SESSION_SECRET };
+  const session = await useSession(event, { password: sessionSecret });
   const now = Math.floor(Date.now() / 1000);
   let { access_token, expires_in, mint_time } = session?.data.tokenData || {};
   if (!access_token || ((now - mint_time) > (expires_in - 30))) {
