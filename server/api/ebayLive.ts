@@ -1,56 +1,54 @@
 /* eslint-disable camelcase */
 import axios from 'axios';
-// eslint-disable-next-line import/extensions
-import getToken from './ebayAuth';
-import utils from '../../utils';
+import { defineEventHandler, useSession } from 'h3';
 
-const ebayLiveResults = (params, token) => {
+const ebayLiveResults = (params, token, buyingOption, sort) => {
   Object.keys(params).forEach((key) => {
     if (!params[key]) {
       delete params[key];
     }
   });
-  const headers = {
-    Authorization: `Bearer ${token}`,
-  };
   const {
     item,
     category,
     condition,
+    marketplace,
   } = params;
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    'X-EBAY-C-MARKETPLACE-ID': marketplace,
+  };
 
   const aspects = { ...params };
   delete aspects.item;
   delete aspects.category;
   delete aspects.buyingOption;
   delete aspects.condition;
+  delete aspects.marketplace;
 
-  const aspectsEncoded = utils.encodeObject(aspects);
-  const newAspectsEncoded = { ...aspectsEncoded };
-  Object.keys(aspectsEncoded).forEach((key) => {
-    newAspectsEncoded[key] = `{${aspectsEncoded[key]}}`;
+  aspects.categoryId = category;
+  aspects.conditionDistributions = condition;
+
+  const aspectsBraced = { ...aspects };
+  Object.keys(aspects).forEach((key) => {
+    aspectsBraced[key] = `{${aspects[key]}}`;
   });
 
-  const aspectsString = JSON.stringify(newAspectsEncoded).replace(/"/g, '');
+  const aspectsString = JSON.stringify(aspectsBraced).replace(/"/g, '');
   const newAspectsString = aspectsString.substr(1, aspectsString.length - 2);
+  const aspect_filter = `categoryId:{${category}},conditionDistributions:{${condition}},${newAspectsString}`;
 
   const liveUrl = 'https://api.ebay.com/buy/browse/v1/item_summary/search';
 
-  const otherParams = {
-    filter: 'buyingOptions:{AUCTION}',
-    sort: 'endingSoonest',
+  const allParams = {
+    filter: `buyingOptions:{${buyingOption}}`,
+    sort,
     q: item,
     category_ids: category,
+    aspect_filter,
   };
 
-  const otherParamsEncoded = utils.encodeObject(otherParams);
-
-  const paramsEncoded = {
-    ...otherParamsEncoded,
-    aspect_filter: `categoryId:${category},conditionDistributions:{${condition}},${newAspectsString}`,
-  };
-
-  const uri = axios.getUri({ url: liveUrl, params: paramsEncoded });
+  const uri = axios.getUri({ url: liveUrl, params: allParams });
 
   return axios.get(uri, {
     headers,
@@ -62,24 +60,11 @@ const ebayLiveResults = (params, token) => {
 };
 
 export default defineEventHandler(async (event) => {
-  const query = getQuery(event);
   const config = useRuntimeConfig(event);
-  if (!event?.context?.session?.data?.access_token) {
-    const tokenData = await getToken(config);
-    event.context.session.data = { tokenData };
-    const token = tokenData.access_token;
-    const results = await ebayLiveResults(query, token);
-    return { data: results.data };
-  }
-  if (event?.context?.session?.data?.access_token) {
-    const now = Math.floor(Date.now() / 1000);
-    const { expires_in, mint_time } = event.context.session.data;
-    const expired = ((now - mint_time) > (expires_in - 30));
-    if (expired) {
-      const tokenData = await getToken(config);
-      event.context.session.data = { tokenData };
-      return { data: tokenData.access_token };
-    }
-    return { data: event.context.session.data.access_token };
-  }
+  const query = getQuery(event);
+  const session = await useSession(event, { password: config.sessionSecret });
+  const { access_token } = session?.data.tokenData || {};
+  const liveResults = await ebayLiveResults(query, access_token, 'AUCTION', 'endingSoonest');
+  const binResults = await ebayLiveResults(query, access_token, 'FIXED_PRICE', 'price');
+  return { data: { auction: liveResults.data, bin: binResults.data } };
 });

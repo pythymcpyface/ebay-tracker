@@ -4,7 +4,7 @@
       <div>
         <a
           target="_blank"
-          :href="item.itemHref"
+          :href="item.image.imageUrl"
         >
           <div>
             <img
@@ -19,13 +19,13 @@
       <div>
         <div>
           <span>
-            <span>Ends in {{ utils.calculateMinutesRemaining(item.itemEndDate) }} minutes</span>
+            <span v-if="item.itemEndDate">Ends in {{ utils.calculateMinutesRemaining(item.itemEndDate) }} minutes</span>
           </span>
         </div>
       </div>
       <a
         target="_blank"
-        :href="item.itemHref"
+        :href="item.itemWebUrl"
       >
         <div>
           <h1>
@@ -37,7 +37,7 @@
         <div>
           <span>
             <span>
-              {{ item.currentBidPrice.value }} {{ item.currentBidPrice.currency }}
+              {{ item?.price?.value || item?.currentBidPrice?.value }} {{ item?.price?.currency || item?.currentBidPrice?.currency }}
             </span>
           </span>
         </div>

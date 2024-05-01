@@ -20,6 +20,14 @@
       Clear filters
     </UButton>
     <USelectMenu
+      v-model="selectedMarketplace"
+      :ui-menu="{ width: 'min-w-max' }"
+      placeholder="Marketplace"
+      :options="marketplaces"
+      option-attribute="marketplaceText"
+      value-attribute="marketplaceCode"
+    />
+    <USelectMenu
       v-model="selectedCategory"
       :ui-menu="{ width: 'min-w-max' }"
       placeholder="Category"
@@ -62,11 +70,22 @@
     <SoldChart ref="soldChart" />
     <LiveChart ref="liveChart" />
   </div>
-  <ItemSummary
-    v-for="itemSummary in itemSummaries"
-    :key="itemSummary.itemId"
-    :item="itemSummary"
-  />
+  <UTabs :items="tabs">
+    <template #auction>
+      <ItemSummary
+        v-for="auctionItemSummary in auctionItemSummaries"
+        :key="auctionItemSummary.itemId"
+        :item="auctionItemSummary"
+      />
+    </template>
+    <template #bin>
+      <ItemSummary
+        v-for="binItemSummary in binItemSummaries"
+        :key="binItemSummary.itemId"
+        :item="binItemSummary"
+      />
+    </template>
+  </UTabs>
 </template>
 
 <script setup>
@@ -74,9 +93,11 @@ import constants from '../constants';
 import utils from '../utils';
 
 const item = ref('');
+const symbol = ref('');
 const soldChart = ref(null);
 const liveChart = ref(null);
 const categories = ref([]);
+const marketplaces = ref([]);
 const aspects = ref([]);
 const buyingOptions = ref([]);
 const conditions = ref([]);
@@ -85,70 +106,90 @@ const selectedCategory = ref(null);
 const selectedAspect = ref({});
 const selectedBuyingOption = ref(null);
 const selectedCondition = ref(null);
-const itemSummaries = ref(null);
+const selectedMarketplace = ref('');
+const auctionItemSummaries = ref(null);
+const binItemSummaries = ref(null);
+const priceElements = ref(null);
 
-const search = () => {
+const tabs = [{
+  slot: 'auction',
+  label: 'Auction',
+}, {
+  slot: 'bin',
+  label: 'Buy-it-now',
+}];
+
+const search = async () => {
   if (item.value) {
-    $fetch(
-      '/api/ebayRefinements', {
-        query: {
-          item: item.value,
-          category: selectedCategory.value,
-          buyingOption: selectedBuyingOption.value,
-          condition: constants.conditionsObj[selectedCondition.value],
-          ...selectedAspect.value,
+    $fetch('/api/ebayAuth').then(() => {
+      $fetch(
+        '/api/ebayRefinements', {
+          query: {
+            item: item.value,
+            category: selectedCategory.value,
+            buyingOption: selectedBuyingOption.value,
+            marketplace: selectedMarketplace.value,
+            condition: constants.conditionsObj[selectedCondition.value],
+            ...selectedAspect.value,
+          },
         },
-      },
-    ).then((refinementsData) => {
-      refinements.value = refinementsData.data;
-      const {
-        categoryDistributions,
-        aspectDistributions,
-        buyingOptionsDistributions,
-        conditionDistributions,
-      } = refinementsData.data.refinement;
-      categories.value = categoryDistributions?.sort((a, b) => b.matchCount - a.matchCount);
-      aspects.value = aspectDistributions?.sort((a, b) => {
-        return b.aspectValueDistributions.length - a.aspectValueDistributions.length;
+      ).then((refinementsData) => {
+        refinements.value = refinementsData.data;
+        const {
+          categoryDistributions,
+          aspectDistributions,
+          buyingOptionsDistributions,
+          conditionDistributions,
+        } = refinementsData.data.refinement;
+        categories.value = categoryDistributions?.sort((a, b) => b.matchCount - a.matchCount);
+        aspects.value = aspectDistributions?.sort((a, b) => {
+          return b.aspectValueDistributions.length - a.aspectValueDistributions.length;
+        });
+        buyingOptions.value = buyingOptionsDistributions?.sort((a, b) => {
+          return b.matchCount - a.matchCount;
+        });
+        conditions.value = conditionDistributions?.sort((a, b) => {
+          return b.matchCount - a.matchCount;
+        });
       });
-      buyingOptions.value = buyingOptionsDistributions?.sort((a, b) => {
-        return b.matchCount - a.matchCount;
-      });
-      conditions.value = conditionDistributions?.sort((a, b) => {
-        return b.matchCount - a.matchCount;
-      });
-    });
-    $fetch(
-      '/api/ebaySold', {
-        query: {
-          item: item.value,
-          category: selectedCategory.value,
-          buyingOption: selectedBuyingOption.value,
-          condition: constants.conditionsObj[selectedCondition.value],
-          ...selectedAspect.value,
+      $fetch(
+        '/api/ebayLive', {
+          query: {
+            item: item.value,
+            category: selectedCategory.value,
+            marketplace: selectedMarketplace.value,
+            buyingOption: selectedBuyingOption.value,
+            condition: selectedCondition.value,
+            ...selectedAspect.value,
+          },
         },
-      },
-    ).then((data) => {
-      soldChart.value.updateSoldChart(data.data);
-    });
-    $fetch(
-      '/api/ebayLive', {
-        query: {
-          item: item.value,
-          category: selectedCategory.value,
-          buyingOption: selectedBuyingOption.value,
-          condition: selectedCondition.value,
-          ...selectedAspect.value,
-        },
-      },
-    ).then((data) => {
-      itemSummaries.value = data.data.itemSummaries;
-      const values = data.data.itemSummaries.map((itemSummary) => {
-        const price = itemSummary?.price?.value;
-        const minutesRemaining = utils.calculateMinutesRemaining(itemSummary.itemEndDate);
-        return [minutesRemaining, price];
+      ).then((liveData) => {
+        auctionItemSummaries.value = liveData.data.auction.itemSummaries;
+        binItemSummaries.value = liveData.data.bin.itemSummaries;
+        const currency = liveData.data.auction.itemSummaries[0].price?.currency || liveData.data.auction.itemSummaries[0]?.currentBidPrice?.currency;
+        const values = liveData.data.auction.itemSummaries.map((auctionItemSummary) => {
+          const price = auctionItemSummary?.price?.value || auctionItemSummary?.currentBidPrice?.value;
+          const minutesRemaining = utils.calculateMinutesRemaining(auctionItemSummary.itemEndDate);
+          return [minutesRemaining, price];
+        });
+        symbol.value = currency;
+        liveChart.value.updateLiveChart(values, currency);
+        $fetch(
+          '/api/ebaySold', {
+            query: {
+              item: item.value,
+              category: selectedCategory.value,
+              marketplace: utils.getCountryDomain(selectedMarketplace.value.replace('EBAY_', '')),
+              buyingOption: selectedBuyingOption.value,
+              condition: constants.conditionsObj[selectedCondition.value],
+              ...selectedAspect.value,
+            },
+          },
+        ).then((soldData) => {
+          priceElements.value = soldData.data;
+          soldChart.value.updateSoldChart(soldData.data, currency);
+        });
       });
-      liveChart.value.updateLiveChart(values);
     });
   }
 };
@@ -164,8 +205,8 @@ const clear = () => {
   selectedAspect.value = {};
   selectedBuyingOption.value = null;
   selectedCondition.value = null;
-  soldChart.value.updateSoldChart(['-1', '0', '1']);
-  liveChart.value.updateLiveChart([[0, 0]]);
+  soldChart.value.updateSoldChart([]);
+  liveChart.value.updateLiveChart([[]]);
 };
 
 const getAspectOptions = (aspect) => {
@@ -179,6 +220,19 @@ const getAspectOptions = (aspect) => {
     };
   });
 };
+
+marketplaces.value = constants.marketplaces.map((marketplace) => {
+  return {
+    marketplaceCode: marketplace,
+    marketplaceText: utils.getCountryName(marketplace.replace('EBAY_', '')),
+  };
+});
+
+watch(selectedMarketplace, async () => {
+  if (selectedMarketplace.value) {
+    search();
+  }
+});
 
 watch(selectedCategory, async () => {
   if (selectedCategory.value) {

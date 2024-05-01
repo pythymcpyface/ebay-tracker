@@ -1,0 +1,14 @@
+node_modules
+npm-debug.log
+Dockerfile
+.dockerignore
+.git
+.husky
+.vscode
+.nyc_output
+.eslint*
+.gitignore
+babel.config.json
+.nuxt
+yarn-error.log
+.output
