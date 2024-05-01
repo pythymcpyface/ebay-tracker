@@ -60,10 +60,8 @@ const ebayLiveResults = (params, token, buyingOption, sort) => {
 };
 
 export default defineEventHandler(async (event) => {
-  const config = useRuntimeConfig(event);
-  const { sessionSecret } = config || { sessionSecret: process.env.SESSION_SECRET };
-  const session = await useSession(event, { password: sessionSecret });
   const query = getQuery(event);
+  const session = await useSession(event, { password: process.env.NUXT_SESSION_SECRET || '' });
   const { access_token } = session?.data.tokenData || {};
   const liveResults = await ebayLiveResults(query, access_token, 'AUCTION', 'endingSoonest');
   const binResults = await ebayLiveResults(query, access_token, 'FIXED_PRICE', 'price');

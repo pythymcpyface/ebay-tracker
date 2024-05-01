@@ -25,7 +25,7 @@ RUN yarn install \
   --production=true
 
 # Build
-RUN yarn build
+RUN yarn run build
 
 ENV HOST 0.0.0.0
 ENV PORT 3000

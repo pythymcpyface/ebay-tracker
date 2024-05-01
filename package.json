@@ -3,9 +3,9 @@
   "private": true,
   "type": "commonjs",
   "scripts": {
-    "build": "nuxt build",
+    "build": "nuxi build",
     "dev": "nuxt dev",
-    "generate": "nuxt generate",
+    "generate": "nuxi generate",
     "lint": "eslint --format table --ext=js,jsx,vue -- .",
     "lint:min": "eslint --ext=js,jsx,vue -- .",
     "preview": "nuxt preview",

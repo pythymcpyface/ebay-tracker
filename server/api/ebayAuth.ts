@@ -2,11 +2,9 @@
 import axios from 'axios';
 import { defineEventHandler, useSession } from 'h3';
 
-const getToken = (config) => {
-  const { clientId, clientSecret, tokenUrl } = config
-    || { clientId: process.env.EBAY_CLIENT_ID,
-      clientSecret: process.env.EBAY_CLIENT_SECRET,
-      tokenUrl: process.env.EBAY_TOKEN_URL };
+const getToken = () => {
+  const clientId = process.env.NUXT_EBAY_CLIENT_ID;
+  const clientSecret = process.env.NUXT_EBAY_CLIENT_SECRET;
   const credsString = `${clientId}:${clientSecret}`;
   const encodedCreds = btoa(credsString);
 
@@ -19,7 +17,7 @@ const getToken = (config) => {
     Authorization: `Basic ${encodedCreds}`,
   };
 
-  return axios.post(tokenUrl, body, { headers })
+  return axios.post(process.env.NUXT_EBAY_TOKEN_URL || '', body, { headers })
     .then((response) => {
       const mint_time = Math.floor(Date.now() / 1000);
       return { ...response.data, mint_time };
@@ -29,13 +27,11 @@ const getToken = (config) => {
 };
 
 export default defineEventHandler(async (event) => {
-  const config = useRuntimeConfig(event);
-  const { sessionSecret } = config || { sessionSecret: process.env.SESSION_SECRET };
-  const session = await useSession(event, { password: sessionSecret });
+  const session = await useSession(event, { password: process.env.NUXT_SESSION_SECRET || '' });
   const now = Math.floor(Date.now() / 1000);
   let { access_token, expires_in, mint_time } = session?.data.tokenData || {};
   if (!access_token || ((now - mint_time) > (expires_in - 30))) {
-    const tokenData = await getToken(config);
+    const tokenData = await getToken();
     access_token = tokenData.access_token;
     await session.update({ tokenData });
   }
