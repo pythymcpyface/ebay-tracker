@@ -1,7 +1,5 @@
 node_modules
 npm-debug.log
-Dockerfile
-.dockerignore
 .git
 .husky
 .vscode
@@ -12,3 +10,4 @@ babel.config.json
 .nuxt
 yarn-error.log
 .output
+.env

@@ -30,8 +30,9 @@ const ebayRefinements = (params, token) => {
 
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig(event);
+  const { sessionSecret } = config || { sessionSecret: process.env.SESSION_SECRET };
+  const session = await useSession(event, { password: sessionSecret });
   const query = getQuery(event);
-  const session = await useSession(event, { password: config.sessionSecret });
   const { access_token } = session.data.tokenData || {};
   const refinements = await ebayRefinements(query, access_token);
   return { data: refinements.data };

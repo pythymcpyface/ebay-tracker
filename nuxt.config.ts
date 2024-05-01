@@ -8,6 +8,12 @@ export default defineNuxtConfig({
     tokenUrl: process.env.EBAY_TOKEN_URL,
     sessionSecret: process.env.SESSION_SECRET,
   },
+  env: {
+    clientId: process.env.EBAY_CLIENT_ID,
+    clientSecret: process.env.EBAY_CLIENT_SECRET,
+    tokenUrl: process.env.EBAY_TOKEN_URL,
+    sessionSecret: process.env.SESSION_SECRET,
+  },
   buildModules: [
     '@nuxtjs/date-fns',
   ],

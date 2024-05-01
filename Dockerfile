@@ -22,9 +22,7 @@ COPY --chown=999:998 . ./
 # Install deps
 RUN yarn install \
   --frozen-lockfile \
-  --production=true \
-  --prefer-offline \
-  --non-interactive
+  --production=true
 
 # Build
 RUN yarn build
