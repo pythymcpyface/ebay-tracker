@@ -66,9 +66,15 @@
       />
     </div>
   </div>
-  <div class="flex">
-    <SoldChart ref="soldChart" />
-    <LiveChart ref="liveChart" />
+  <div class="w-auto h-auto">
+    <SoldChart
+      ref="soldChart"
+      :loading="soldDataLoading"
+    />
+    <LiveChart
+      ref="liveChart"
+      :loading="liveDataLoading"
+    />
   </div>
   <UTabs :items="tabs">
     <template #auction>
@@ -95,7 +101,9 @@ import utils from '../utils';
 const item = ref('');
 const symbol = ref('');
 const soldChart = ref(null);
+const soldDataLoading = ref(false);
 const liveChart = ref(null);
+const liveDataLoading = ref(false);
 const categories = ref([]);
 const marketplaces = ref([]);
 const aspects = ref([]);
@@ -121,6 +129,8 @@ const tabs = [{
 
 const search = async () => {
   if (item.value) {
+    soldDataLoading.value = true;
+    liveDataLoading.value = true;
     $fetch('/api/ebayAuth').then(() => {
       $fetch(
         '/api/ebayRefinements', {
@@ -173,6 +183,7 @@ const search = async () => {
           return [minutesRemaining, price];
         });
         symbol.value = currency;
+        liveDataLoading.value = false;
         liveChart.value.updateLiveChart(values, currency);
         $fetch(
           '/api/ebaySold', {
@@ -186,6 +197,7 @@ const search = async () => {
             },
           },
         ).then((soldData) => {
+          soldDataLoading.value = false;
           priceElements.value = soldData.data;
           soldChart.value.updateSoldChart(soldData.data, currency);
         });

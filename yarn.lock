@@ -8304,6 +8304,16 @@ nuxi@^3.11.1:
   optionalDependencies:
     fsevents "~2.3.3"
 
+nuxt-gtag@^2.0.5:
+  version "2.0.5"
+  resolved "https://registry.yarnpkg.com/nuxt-gtag/-/nuxt-gtag-2.0.5.tgz#0a7afb8a709a151c8d5dadb8dc0f3235caa5056b"
+  integrity sha512-RX/52eXufjly/Y7PJKRLGLBQhI73SnmzcLoI4pjEJIVsEVpIXJLkAwHtKY3HvU8KiV0ai4UE3Cn1xB6ncoiFaA==
+  dependencies:
+    "@nuxt/kit" "^3.10.3"
+    defu "^6.1.4"
+    pathe "^1.1.2"
+    ufo "^1.4.0"
+
 nuxt-highcharts@^3.1.1:
   version "3.1.1"
   resolved "https://registry.yarnpkg.com/nuxt-highcharts/-/nuxt-highcharts-3.1.1.tgz#e537a472c5c96fc4b958fdfe32d625e0ec913929"
