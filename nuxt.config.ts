@@ -15,6 +15,7 @@ export default defineNuxtConfig({
   ],
   modules: [
     '@nuxt/content',
+    'nuxt-gtag',
     'nuxt-highcharts',
     '@nuxt/ui',
   ],
@@ -28,5 +29,8 @@ export default defineNuxtConfig({
         config.devtool = 'source-map';
       }
     },
+  },
+  gtag: {
+    id: 'G-NXKRVMCLDL',
   },
 });

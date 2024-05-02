@@ -1,17 +1,31 @@
 <template>
-  <highchart
-    class="flex-1 justify-between p-1"
-    :options="chartOptions"
-    :modules="['exporting']"
-    :update="watchers"
-    style="width:100%;"
+  <USkeleton
+    v-if="loading"
+    class="h-[402px] w-auto"
   />
+  <div
+    v-else
+    class="flex-1 justify-between p-1"
+  >
+    <highchart
+      :options="chartOptions"
+      :modules="['exporting']"
+      :update="watchers"
+      style="width:100%;"
+    />
+  </div>
 </template>
 
 <script>
 const currency = ref('');
 
 export default {
+  props: {
+    loading: {
+      type: Boolean,
+      default: false,
+    },
+  },
   data() {
     return {
       title: 'Live listings chart',
@@ -56,22 +70,12 @@ export default {
         accessibility: { enabled: false },
         chart: {
           events: {
-            redraw() {
+            load() {
               this?.series[0].yAxis.setTitle({ text: `Price (${currency.value})` }, false);
               this.render();
             },
           },
-          backgroundColor: this.sexy
-            ? {
-              linearGradient: { x1: 0, x2: 0, y1: 0, y2: 1 },
-              stops: [
-                [0, this.seriesColor],
-                [0.5, '#ffffff'],
-                [1, this.seriesColor],
-              ],
-            }
-            : '#ffffff',
-          className: 'my-chart',
+          backgroundColor: this.backgroundColor,
           type: this.chartType.toLowerCase(),
         },
         credits: {
@@ -111,10 +115,6 @@ export default {
           min: 0.0,
         }],
         title: {
-          style: {
-            // @ts-ignore
-            color: this.sexy ? this.invertedColor(0) : '#black',
-          },
           text: `${this.title} ${
             this.lastPointClicked.timestamp !== ''
               ? `(Point clicked: ${this.lastPointClicked.timestamp})`

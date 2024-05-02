@@ -1,10 +1,18 @@
 <template>
-  <highchart
-    class="flex-1 justify-between p-1"
-    :options="chartOptions"
-    :update="watchers"
-    :modules="['exporting']"
+  <USkeleton
+    v-if="loading"
+    class="h-[402px] w-auto"
   />
+  <div
+    v-else
+    class="flex-1 justify-between p-1"
+  >
+    <highchart
+      :options="chartOptions"
+      :update="watchers"
+      :modules="['exporting']"
+    />
+  </div>
 </template>
 
 <script>
@@ -22,10 +30,15 @@ if (typeof Highcharts === 'object') {
 }
 
 export default {
+  props: {
+    loading: {
+      type: Boolean,
+      default: false,
+    },
+  },
   data() {
     return {
       showChart: true,
-      backgroundColor: '#fff',
       titles: ['Sold price distribution', ''],
       points: points.value,
       currency: currency.value,
@@ -67,7 +80,7 @@ export default {
         },
         chart: {
           events: {
-            redraw() {
+            load() {
               this?.series[2].xAxis.setTitle({ text: `Price (${currency.value})` }, false);
               const ys = this?.series[2]?.data.map((point) => point?.y);
               const max = Math.max(...ys);
